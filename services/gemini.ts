@@ -1,34 +1,54 @@
-
-import { GoogleGenAI, Type } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+/**
+ * 透過 Netlify Function 安全地呼叫 Gemini API
+ * 避免在瀏覽器端暴露 API KEY
+ */
 
 export const generateSalesMission = async () => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: "作為LV精品店經理，請生成一個有趣的每日銷售任務。格式需包含：任務標題、任務簡介、任務具體目標(Objective)、詳細規則與標準(Rules/Criteria)、獎勵寶石類型(Sapphire, Emerald, Ruby, Diamond)。請用繁體中文。",
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING },
-          content: { type: Type.STRING },
-          objective: { type: Type.STRING },
-          rules: { type: Type.STRING },
-          gemType: { type: Type.STRING },
-        },
-        required: ["title", "content", "objective", "rules", "gemType"]
-      }
+  try {
+    const response = await fetch("/.netlify/functions/gemini", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "generateMission" }),
+    });
+
+    if (!response.ok) {
+      throw new Error("伺服器回應錯誤，無法生成任務");
     }
-  });
-  return JSON.parse(response.text);
+
+    // 取得 JSON 格式的任務內容
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("generateSalesMission 發生錯誤:", error);
+    throw error;
+  }
 };
 
 export const generateMotivationalMessage = async (teamName: string, score: number) => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `請以LV精品店經理的口吻，為目前得分 ${score} 分的 ${teamName} 寫一句優雅且具激勵性的話語，鼓勵他們在下一個月繼續努力。限50字以內，繁體中文。`,
-  });
-  return response.text;
+  try {
+    const response = await fetch("/.netlify/functions/gemini", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ 
+        action: "motivate", 
+        teamName, 
+        score 
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("伺服器回應錯誤，無法生成激勵語");
+    }
+
+    const data = await response.json();
+    // 假設後端回傳格式為 { reply: "內容" }
+    return data.reply;
+  } catch (error) {
+    console.error("generateMotivationalMessage 發生錯誤:", error);
+    return "期待各位在高級珠寶領域展現卓越表現。"; // 發生錯誤時的回傳預設優雅語句
+  }
 };
