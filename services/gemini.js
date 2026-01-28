@@ -1,6 +1,6 @@
 /**
- * 透過 Netlify Function 安全地呼叫 Gemini API
- * 避免在瀏覽器端暴露 API KEY
+ * LV 珠寶競賽 - Gemini AI 通訊服務 (純 JS 版)
+ * 透過呼叫 Netlify Functions 確保 API Key 安全
  */
 
 export const generateSalesMission = async () => {
@@ -17,16 +17,15 @@ export const generateSalesMission = async () => {
       throw new Error("伺服器回應錯誤，無法生成任務");
     }
 
-    // 取得 JSON 格式的任務內容
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error("generateSalesMission 發生錯誤:", error);
+    console.error("生成任務失敗:", error);
     throw error;
   }
 };
 
-export const generateMotivationalMessage = async (teamName: string, score: number) => {
+// 修正：移除參數後的 : string 與 : number
+export const generateMotivationalMessage = async (teamName, score) => {
   try {
     const response = await fetch("/.netlify/functions/gemini", {
       method: "POST",
@@ -45,10 +44,9 @@ export const generateMotivationalMessage = async (teamName: string, score: numbe
     }
 
     const data = await response.json();
-    // 假設後端回傳格式為 { reply: "內容" }
     return data.reply;
   } catch (error) {
-    console.error("generateMotivationalMessage 發生錯誤:", error);
-    return "期待各位在高級珠寶領域展現卓越表現。"; // 發生錯誤時的回傳預設優雅語句
+    console.error("激勵語生成失敗:", error);
+    return "期待各位在高級珠寶領域展現卓越表現。"; 
   }
 };
